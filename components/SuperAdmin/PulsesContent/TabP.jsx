@@ -25,12 +25,10 @@ const TableP = () => {
 
   useEffect(() => {
     fetchPulseData();
-    const ws = new WebSocket('ws://localhost:3001'); // Replace with your WebSocket server URL
+    const ws = new WebSocket('ws://localhost:3001'); 
 
     ws.onmessage = (event) => {
-      console.log('Raw WebSocket message:', event.data); // Log raw message for debugging
-
-      // Check if the message is in JSON format
+      console.log('Raw WebSocket message:', event.data); 
       if (isJson(event.data)) {
         try {
           const message = JSON.parse(event.data);

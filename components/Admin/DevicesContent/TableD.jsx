@@ -106,7 +106,7 @@ const TableD = () => {
       const selectedIds = selectedRows;
       await Promise.all(selectedIds.map(id => deleteDeviceById(id)));
       setRefresh(!refresh);
-      fetchDeviceData(); // Manually refresh data after batch delete
+      fetchDeviceData(); 
       setSelectedRows([]);
       setShowDeleteConfirmation(false);
     } catch (error) {
