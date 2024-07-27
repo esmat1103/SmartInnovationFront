@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
-import export1 from '../../../public/assets/Table/export.svg';
 import edit from '../../../public/assets/Table/edit.svg';
 import clear from '../../../public/assets/Table/delete.svg';
 import DeleteConfirmation from '@components/Commun/Popups/Sensors/DeleteConfirmationModal';
 import EditUnit from '@components/Commun/Popups/Units/editUnit';
 import { deleteUnitById } from '@app/utils/apis/units'; 
- 
+
 const TableBodyU = ({ tableData, selectedRows, handleCheckboxChange, handleDelete, handleEdit }) => {
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
@@ -57,7 +56,10 @@ const TableBodyU = ({ tableData, selectedRows, handleCheckboxChange, handleDelet
                 onChange={() => handleCheckboxChange(row._id)}
               />
             </td>
+            <td><div className="box-cell f12">{row.SensorType}</div></td>
+            <td><div className="box-cell f12">{row.MeasuredParameter}</div></td>
             <td><div className="box-cell f12">{row.unitName}</div></td>
+            <td><div className="box-cell f12">{row.Abbreviation}</div></td> {/* New column data */}
             <td className='text-center pl23'>
               <div className="flex justify-end">
                 <button onClick={() => handleEditClick(row._id)}>

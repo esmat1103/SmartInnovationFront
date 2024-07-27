@@ -36,7 +36,10 @@ const TableHeaderU = ({ handleHeaderCheckboxChange, allSelected }) => {
             checked={allSelected}
           />
         </th>
-        <th>{t('name')}</th>
+        <th>{t('SensorType')}</th>
+        <th>{t('MeasuredParameter')}</th>
+        <th>{t('unitName')}</th>
+        <th>{t('Abbreviation')}</th> {/* New column header */}
         <th className="flex justify-end headerrr">{t('actions')}</th>
       </tr>
     </thead>

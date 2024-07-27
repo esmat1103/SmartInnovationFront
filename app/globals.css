@@ -33,7 +33,7 @@
 @import url('../app/css/Content/popup.css');
 @import url('../app/css/Content/alerts.css');
 @import url('../app/css/Content/complaint.css');
-
+@import url('../app/css/Content/statBox.css');
 
 
 @import url('../app/css/popups/DeleteConfirmation.css');
@@ -86,7 +86,21 @@
   }
   
 .read-only {
-    cursor: not-allowed; /* Change cursor to indicate it's not editable */
-    opacity: 0.6; /* Adjust opacity to make the field appear less prominent */
+    cursor: not-allowed; 
+    opacity: 0.6; 
   }
   
+   
+  .full-height {
+    height: 100vh;
+}
+
+.custom-map-container {
+    border-radius:10px;
+    overflow: hidden;
+  }
+  
+  .leaflet-container {
+    background: none !important; 
+    outline-offset: 0 !important; 
+  }

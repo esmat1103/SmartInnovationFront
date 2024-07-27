@@ -1,30 +1,34 @@
+// pages/SuperAdmin/home.js
 import LayoutH from '@components/SuperAdmin/layoutH';
 import { getTranslations } from '../../app/utils/getTranslations';
-import React, {useState,useEffect} from "react";
+import React, { useState, useEffect } from "react";
+import HomeSA from '@components/SuperAdmin/HomeDashContent/Home';
 
-const Home = (initialLanguage) => {
-    const [language, setLanguage] = useState(initialLanguage);
+const Home = (props) => {
+    const [language, setLanguage] = useState(props.initialLanguage || 'en');
 
     useEffect(() => {
-        const storedLanguage = localStorage.getItem('language') || initialLanguage;
+        const storedLanguage = localStorage.getItem('language') || language;
         setLanguage(storedLanguage);
-    }, []);
+    }, [language]);
 
     return (
         <>
-            <LayoutH />    
+            <LayoutH>
+               <HomeSA/>
+           </LayoutH>   
         </>
-
     );
+};
 
-}
 export const getServerSideProps = async ({ locale }) => {
-    const translations = await getTranslations(locale,['sidebar','logout'])
+    const translations = await getTranslations(locale, ['sidebar', 'logout']);
     return {
         props: {
-          ...translations,
+            ...translations,
+            initialLanguage: locale,
         },
-      };
-    }
-export default Home;
+    };
+};
 
+export default Home;

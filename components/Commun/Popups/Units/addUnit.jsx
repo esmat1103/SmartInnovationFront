@@ -11,6 +11,8 @@ const AddUnit = ({ isOpen, onClose, onUnitAdded }) => {
   const [showErrorAlert, setShowErrorAlert] = useState(false);
   const [unitData, setUnitData] = useState({
     unitName: '',
+    SensorType: '',
+    MeasuredParameter: ''
   });
   const timeoutRef = useRef(null);
 
@@ -33,9 +35,9 @@ const AddUnit = ({ isOpen, onClose, onUnitAdded }) => {
   };
 
   const validateForm = () => {
-    const { unitName } = unitData;
-    if (!unitName.trim()) {
-      setAlertMessage('Please fill in all the required fields !');
+    const { unitName, SensorType, MeasuredParameter } = unitData;
+    if (!unitName.trim() || !SensorType.trim() || !MeasuredParameter.trim()) {
+      setAlertMessage('Please fill in all the required fields!');
       setShowErrorAlert(true);
       return false;
     }
@@ -56,13 +58,15 @@ const AddUnit = ({ isOpen, onClose, onUnitAdded }) => {
       timeoutRef.current = setTimeout(() => {
         setUnitData({
           unitName: '',
+          SensorType: '',
+          MeasuredParameter: ''
         });
         handleCloseAlerts();
         onClose();
       }, 2000);
     } catch (error) {
       console.error('Error adding unit:', error);
-      setAlertMessage('Error adding unit !');
+      setAlertMessage('Error adding unit!');
       setShowErrorAlert(true);
     }
   };
@@ -85,8 +89,30 @@ const AddUnit = ({ isOpen, onClose, onUnitAdded }) => {
             id="unitName"
             name="unitName"
             className="input-field"
-            placeholder="Name"
+            placeholder="Unit Name"
             value={unitData.unitName}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="form-group">
+          <input
+            type="text"
+            id="SensorType"
+            name="SensorType"
+            className="input-field"
+            placeholder="Sensor Type"
+            value={unitData.SensorType}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="form-group">
+          <input
+            type="text"
+            id="MeasuredParameter"
+            name="MeasuredParameter"
+            className="input-field"
+            placeholder="Measured Parameter"
+            value={unitData.MeasuredParameter}
             onChange={handleChange}
           />
         </div>
