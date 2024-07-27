@@ -35,7 +35,7 @@ const LeafletMap = ({ markers }) => {
           center={[40.7128, -74.0060]} 
           zoom={2} 
           style={{ height: '100%', width: '100%' }} 
-          attributionControl={false} // Disable attribution control
+          attributionControl={false} 
         >
           <TileLayer
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

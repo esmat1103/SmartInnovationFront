@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import TableHeaderD from '@components/Commun/Devices/TabHeaderD'; 
+import TableHeaderD from '@components/Commun/Devices/TabHeaderD';
 import TableBodyD from '@components/Commun/Devices/TabBodyD'; 
-import AddButton from '@components/Commun/Buttons/AddButton';
 import deleteW from '@public/assets/Table/deleteW.svg';
 import Pagination from '@components/Commun/Pagination';
-import SearchBar from '@components/Commun/search'; 
-import DropdownFilter from '../../commun/fliter';
+import SearchBar from '@components/Commun/search';
+import DropdownFilter from '@components/Commun/Filter';
 import DeleteAllButton from '@components/Commun/Buttons/DeleteAllButton';
 import DeleteConfirmation from '@components/Commun/Popups/DeleteAllConfirmation';
-import AddDevice from '@components/Commun/Popups/Devices/addDevice';
-import { fetchDevices, updateDeviceById, deleteDeviceById } from '@app/utils/apis/devices';
+import { getDevicesByAdminId, updateDeviceById, deleteDeviceById } from '@app/utils/apis/devices';
+import jwt from 'jsonwebtoken';
 
-const TableD = () => { 
+const TableD = () => {
   const [tableData, setTableData] = useState([]);
   const [selectedRows, setSelectedRows] = useState([]);
   const [hovered, setHovered] = useState(false);
@@ -19,13 +18,40 @@ const TableD = () => {
   const rowsPerPage = 8;
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
-  const [deleteItem, setDeleteItem] = useState(null);
   const [refresh, setRefresh] = useState(false);
   const [allSelected, setAllSelected] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    const fetchDeviceData = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('Token not found in local storage');
+        }
+    
+        console.log('Token from localStorage:', token);
+        const decodedToken = jwt.decode(token);
+        console.log('Decoded token:', decodedToken);
+    
+        if (!decodedToken || !decodedToken.userId) {
+          throw new Error('Invalid token or unable to extract userId');
+        }
+    
+        const loggedInAdminId = decodedToken.userId;
+        console.log('Retrieved userId from token:', loggedInAdminId);
+    
+        const data = await getDevicesByAdminId(loggedInAdminId);
+        console.log('Fetched devices data:', data);
+        setTableData(data);
+      } catch (error) {
+        console.error('Error fetching devices:', error);
+        setError('Failed to fetch devices.');
+      }
+    };
+    
     fetchDeviceData();
+
     const ws = new WebSocket('ws://localhost:4002');
 
     ws.onmessage = (event) => {
@@ -33,7 +59,8 @@ const TableD = () => {
       console.log('Received WebSocket message:', data);
 
       if (data.message === 'Device created' || data.message === 'Device updated' || data.message === 'Device deleted') {
-        fetchDeviceData(); // Refresh device list on message
+        console.log('WebSocket event: Device change detected');
+        fetchDeviceData(); 
       }
     };
 
@@ -42,25 +69,16 @@ const TableD = () => {
     };
   }, [refresh]);
 
-  const fetchDeviceData = async () => {
-    try {
-      const data = await fetchDevices();
-      setTableData(data);
-    } catch (error) {
-      console.error('Error fetching devices:', error);
-      setError('Failed to fetch devices.');
-    }
-  };
-
   const toggleForm = () => {
     setIsFormOpen(!isFormOpen);
   };
 
   const handleDelete = async (id) => {
     try {
+      console.log('Deleting device with ID:', id);
       await deleteDeviceById(id);
+      console.log('Device deleted successfully');
       setRefresh(!refresh);
-      fetchDeviceData(); // Manually refresh data after deletion
     } catch (error) {
       console.error('Error deleting device:', error);
     }
@@ -68,28 +86,33 @@ const TableD = () => {
 
   const handleEdit = async (id, updatedData) => {
     try {
+      console.log('Updating device with ID:', id, 'with data:', updatedData);
       await updateDeviceById(id, updatedData);
+      console.log('Device updated successfully');
       setRefresh(!refresh);
-      fetchDeviceData(); // Manually refresh data after update
     } catch (error) {
       console.error('Error updating device:', error);
     }
   };
 
   const handleCheckboxChange = (id) => {
+    console.log('Checkbox change for row ID:', id);
     if (selectedRows.includes(id)) {
       setSelectedRows(selectedRows.filter(rowId => rowId !== id));
     } else {
       setSelectedRows([...selectedRows, id]);
     }
+    console.log('Selected rows:', selectedRows);
   };
 
   const handleHeaderCheckboxChange = () => {
     setAllSelected(!allSelected);
     setSelectedRows(allSelected ? [] : tableData.map((row) => row._id));
+    console.log('Header checkbox change, allSelected:', !allSelected, 'selectedRows:', selectedRows);
   };
 
   const onPageChange = (page) => {
+    console.log('Page change:', page);
     setCurrentPage(page);
   };
 
@@ -98,15 +121,17 @@ const TableD = () => {
   const filterOptions = ['Option 1', 'Option 2', 'Option 3'];
 
   const handleDeleteSelected = () => {
+    console.log('Delete selected rows:', selectedRows);
     setShowDeleteConfirmation(true);
   };
 
   const confirmDelete = async () => {
     try {
+      console.log('Confirm delete for selected rows:', selectedRows);
       const selectedIds = selectedRows;
       await Promise.all(selectedIds.map(id => deleteDeviceById(id)));
+      console.log('Selected devices deleted successfully');
       setRefresh(!refresh);
-      fetchDeviceData(); 
       setSelectedRows([]);
       setShowDeleteConfirmation(false);
     } catch (error) {
@@ -115,6 +140,7 @@ const TableD = () => {
   };
 
   const cancelDelete = () => {
+    console.log('Cancel delete');
     setShowDeleteConfirmation(false);
   };
 
@@ -124,7 +150,6 @@ const TableD = () => {
         <div className="top-left-text nunito f30 "></div>
         <div className="top-right-container flex">
           <SearchBar />
-          <AddButton text="Add Device" onClick={toggleForm} />
         </div>
       </div>
       <div className='mt-5 table-container'>
@@ -154,7 +179,6 @@ const TableD = () => {
             handleEdit={handleEdit}
             selectedRows={selectedRows}
             handleCheckboxChange={handleCheckboxChange}
-            refreshData={() => setRefresh(!refresh)} // Pass refresh function to child component
           />
         </table>
         <div className='pagination-container'>
@@ -164,14 +188,11 @@ const TableD = () => {
             onPageChange={onPageChange}
           />
         </div>
-        {isFormOpen && <AddDevice isOpen={isFormOpen} onClose={toggleForm} onDeviceAdded={() => setRefresh(!refresh)} />}
-        {isFormOpen && <div className="table-overlay"></div>}
       </div>
       {showDeleteConfirmation && (
         <DeleteConfirmation
-          item={deleteItem}
-          onConfirmDelete={confirmDelete}
-          onCancelDelete={cancelDelete}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
         />
       )}
     </div>

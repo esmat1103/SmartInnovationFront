@@ -37,7 +37,6 @@ const TableBodyP = ({ tableData, selectedRows, handleCheckboxChange }) => {
   const handleConfirmDelete = async () => {
     try {
       await deletePulseById(deleteItem); 
-      handleDelete(deleteItem); 
       setShowDeleteConfirmation(false);
     } catch (error) {
       console.error('Error deleting pulse:', error);
@@ -57,8 +56,9 @@ const TableBodyP = ({ tableData, selectedRows, handleCheckboxChange }) => {
                 onChange={() => handleCheckboxChange(row._id)}
               />
             </td>
-            <td><div className="box-cell f12">{row.pulseName}</div></td>
-            <td><div className="box-cell f12">{row.pulseValue}</div></td>
+            <td><div className="box-cell f12">{row.Name}</div></td>
+            <td><div className="box-cell f12">{row.Unit}</div></td>
+            <td><div className="box-cell f12">{row.Description}</div></td>
             <td className='text-center pl23'>
               <div className="flex justify-end">
                 <button onClick={() => handleEditClick(row._id)}>
