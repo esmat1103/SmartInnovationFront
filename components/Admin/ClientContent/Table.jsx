@@ -6,7 +6,7 @@ import deleteW from '../../../public/assets/Table/deleteW.svg';
 import Pagination from '../../Commun/Pagination';
 import SearchBar from '@components/Commun/search';
 import DateFilter from '@components/Commun/date-filter';
-import DropdownFilter from '../../commun/fliter';
+import DropdownFilter from '../../Commun/Filter';
 import DeleteAllButton from '@components/Commun/Buttons/DeleteAllButton';
 import DeleteConfirmation from '@components/Commun/Popups/DeleteAllConfirmation';
 import axios from 'axios';

@@ -26,3 +26,16 @@ export const deleteDeviceById = async (id) => {
   const response = await axios.delete(`${API_URL}/${id}`);
   return response.data;
 };
+
+export const getDevicesByAdminId = async (adminID) => {
+  const response = await axios.get(`${API_URL}/admin/${adminID}`);
+  return response.data;
+};
+
+
+export const getDevicesByClientId = async (adminID) => {
+  const response = await axios.get(`${API_URL}/client/${adminID}`);
+  return response.data;
+};
+
+

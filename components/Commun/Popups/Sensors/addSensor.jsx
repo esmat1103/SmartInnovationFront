@@ -10,7 +10,7 @@ const AddSensor = ({ isOpen, onClose, onSensorAdded }) => {
   const [alertMessage, setAlertMessage] = useState('');
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [showErrorAlert, setShowErrorAlert] = useState(false);
-  const [units, setUnits] = useState([]); 
+  const [units, setUnits] = useState([]);
   const [sensorData, setSensorData] = useState({
     sensorReference: '',
     sensorName: '',
@@ -20,15 +20,16 @@ const AddSensor = ({ isOpen, onClose, onSensorAdded }) => {
     thresholdMin: '',
     thresholdMax: '',
     pulse: '',
-    startIndex: '', 
-    coefficient: '', 
+    startIndex: '',
+    coefficient: '',
+    state: ''
   });
   const timeoutRef = useRef(null);
 
   useEffect(() => {
     const getUnits = async () => {
       try {
-        const fetchedUnits = await fetchUnits(); 
+        const fetchedUnits = await fetchUnits();
         setUnits(fetchedUnits);
       } catch (error) {
         console.error('Error fetching units:', error);
@@ -56,7 +57,7 @@ const AddSensor = ({ isOpen, onClose, onSensorAdded }) => {
 
   const handlePulseChange = (e) => {
     const pulseValue = e.target.value;
-    setSensorData(prevState => ({
+    setSensorData((prevState) => ({
       ...prevState,
       pulse: pulseValue,
       ...(pulseValue === 'Yes' ? { startIndex: '', coefficient: '' } : {})
@@ -64,7 +65,7 @@ const AddSensor = ({ isOpen, onClose, onSensorAdded }) => {
   };
 
   const validateForm = () => {
-    const requiredFields = ['sensorReference', 'sensorName', 'unit', 'rangeMin', 'rangeMax', 'thresholdMin', 'thresholdMax', 'pulse'];
+    const requiredFields = ['sensorReference', 'sensorName', 'unit', 'rangeMin', 'rangeMax', 'thresholdMin', 'thresholdMax', 'pulse', 'state'];
     for (const field of requiredFields) {
       if (!sensorData[field]) {
         setAlertMessage('Please fill in all the required fields!');
@@ -90,7 +91,7 @@ const AddSensor = ({ isOpen, onClose, onSensorAdded }) => {
     try {
       const newSensor = await createSensor(sensorData);
       setShowSuccessAlert(true);
-      onSensorAdded(); 
+      onSensorAdded();
       timeoutRef.current = setTimeout(() => {
         setSensorData({
           sensorReference: '',
@@ -103,6 +104,7 @@ const AddSensor = ({ isOpen, onClose, onSensorAdded }) => {
           pulse: '',
           startIndex: '',
           coefficient: '',
+          state: ''
         });
         handleCloseAlerts();
         onClose();
@@ -208,6 +210,19 @@ const AddSensor = ({ isOpen, onClose, onSensorAdded }) => {
             />
           </div>
         </div>
+        <div className="form-group">
+          <select
+            id="state"
+            name="state"
+            className="input-field custom-select"
+            value={sensorData.state}
+            onChange={handleChange}
+          >
+            <option value="" disabled>Select State</option>
+            <option value="Enabled">Enabled</option>
+            <option value="Disabled">Disabled</option>
+          </select>
+        </div>
         <div className="form-group select-container">
           <select
             id="pulse"
@@ -221,6 +236,7 @@ const AddSensor = ({ isOpen, onClose, onSensorAdded }) => {
             <option value="No">No</option>
           </select>
         </div>
+        
         {sensorData.pulse === 'Yes' && (
           <>
             <div className="form-group">
@@ -247,6 +263,7 @@ const AddSensor = ({ isOpen, onClose, onSensorAdded }) => {
             </div>
           </>
         )}
+        
         <div className="form-group">
           <button type="submit" className="submit-button">Add Sensor</button>
         </div>

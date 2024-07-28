@@ -39,8 +39,8 @@ const SidebarSA = () => {
 
   const handleConfirmLogout = () => {
     setShowLogoutConfirmation(false);
-    localStorage.removeItem('token');
-    router.push('/'); 
+    localStorage.clear();
+     router.push('/'); 
   };
 
   const handleCancelLogout = () => {

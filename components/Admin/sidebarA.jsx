@@ -36,7 +36,7 @@ const SidebarA = () => {
 
     const handleConfirmLogout = () => {
       setShowLogoutConfirmation(false);
-      localStorage.removeItem('token');
+      localStorage.clear();
       router.push('/'); 
     };
   

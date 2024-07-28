@@ -4,7 +4,7 @@ import TableBodyS from '@components/Commun/Sensors/TabBodyS';
 import AddButton from '@components/Commun/Buttons/AddButton';
 import deleteW from '@public/assets/Table/deleteW.svg';
 import Pagination from '@components/Commun/Pagination';
-import DropdownFilter from '../../commun/fliter';
+import DropdownFilter from '../../Commun/Filter';
 import SearchBar from '@components/Commun/search'; 
 import DeleteAllButton from '@components/Commun/Buttons/DeleteAllButton';
 import DeleteConfirmation from '@components/Commun/Popups/DeleteAllConfirmation';

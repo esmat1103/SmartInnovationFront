@@ -10,7 +10,7 @@ import deleteW from '../../../public/assets/Table/deleteW.svg';
 import Pagination from '../../Commun/Pagination';
 import FormClient from '@components/Commun/Popups/Clients/form';
 import DateFilter from '@components/Commun/date-filter';
-import DropdownFilter from '../../commun/fliter';
+import DropdownFilter from '../../Commun/Filter';
 import DeleteAllButton from '@components/Commun/Buttons/DeleteAllButton';
 import DeleteConfirmation from '@components/Commun/Popups/DeleteAllConfirmation';
 import TableBodyC from './TabBodyC';

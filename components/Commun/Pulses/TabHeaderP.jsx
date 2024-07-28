@@ -37,7 +37,9 @@ const TableHeaderP = ({ handleHeaderCheckboxChange, allSelected }) => {
           />
         </th>
         <th>{t('name')}</th>
-        <th>{t('value')}</th>
+        <th>{t('unit')}</th>
+        <th>{t('Description')}</th>
+
         <th className="flex justify-end headerrr">{t('actions')}</th>
       </tr>
     </thead>

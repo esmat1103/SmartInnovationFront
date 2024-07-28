@@ -5,7 +5,8 @@ import SuccessAlert from '../../Alerts/success-alert';
 import ErrorAlert from '../../Alerts/error-alert';
 import { createDevice } from '@app/utils/apis/devices';
 import { fetchCountries, fetchStates } from '@app/utils/apis/location'; 
-import { fetchSensors } from '@app/utils/apis/sensors';
+import { fetchSensors, updateSensorById } from '@app/utils/apis/sensors';
+import axios from 'axios';
 import removeIcon from '/public/assets/Table/delete.svg'; 
 
 const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
@@ -19,23 +20,37 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
     countryId: '', 
     countryName: '', 
     state: '',
-    admin: '',
-    clients: '',
+    adminID: '',
+    clients: [],
     sensors: [],
     status: '',
+    latitude: '', 
+    longitude: '' 
   });
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [sensors, setSensors] = useState([]);
+  const [admins, setAdmins] = useState([]);
   const timeoutRef = useRef(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [countriesData, statesData, sensorsData] = await Promise.all([fetchCountries(), fetchStates(), fetchSensors()]);
+        const [countriesData, statesData, sensorsData, adminsData] = await Promise.all([
+          fetchCountries(),
+          fetchStates(),
+          fetchSensors(),
+          axios.get('http://localhost:3008/users/role/admin', {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token')}`
+            }
+          }).then(response => response.data)
+        ]);
+
         setCountries(countriesData);
         setStates(statesData);
         setSensors(sensorsData);
+        setAdmins(adminsData);
       } catch (error) {
         console.error('Error fetching data:', error);
       }
@@ -57,17 +72,27 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
     if (name === 'sensors') {
-      const selectedSensor = sensors.find(sensor => sensor._id.toString() === value);
-      if (selectedSensor && !deviceData.sensors.includes(selectedSensor.sensorReference)) {
-        setDeviceData({ ...deviceData, sensors: [...deviceData.sensors, selectedSensor.sensorReference] });
+      if (!deviceData.sensors.includes(value)) {
+        setDeviceData(prevData => ({
+          ...prevData,
+          sensors: Array.from(new Set([...prevData.sensors, value])),
+        }));
       }
     } else if (name === 'countryId') {
       const selectedCountry = countries.find(country => String(country.id) === value);
-      setDeviceData({ 
-        ...deviceData, 
-        countryId: value, 
-        countryName: selectedCountry ? selectedCountry.name : '' 
+      setDeviceData({
+        ...deviceData,
+        countryId: value,
+        countryName: selectedCountry ? selectedCountry.name : '',
+      });
+    } else if (name === 'admin') {
+      const selectedAdmin = admins.find(admin => admin.firstName === value);
+      setDeviceData({
+        ...deviceData,
+        adminID: selectedAdmin ? selectedAdmin._id : '',
+        admin: value
       });
     } else {
       setDeviceData({ ...deviceData, [name]: value });
@@ -75,9 +100,9 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
   };
 
   const validateForm = () => {
-    const requiredFields = ['ref', 'deviceName', 'macAddress', 'countryId', 'state', 'admin', 'clients', 'status'];
+    const requiredFields = ['ref', 'deviceName', 'macAddress', 'countryId', 'state', 'adminID', 'clients', 'sensors', 'status', 'latitude', 'longitude']; // Updated to include latitude and longitude
     for (const field of requiredFields) {
-      if (!deviceData[field]) {
+      if (!deviceData[field] || (field === 'sensors' && deviceData.sensors.length === 0)) {
         setAlertMessage('Please fill in all the required fields!');
         setShowErrorAlert(true);
         return false;
@@ -96,9 +121,33 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
     try {
       const newDeviceData = {
         ...deviceData,
+        location: {
+          type: 'Point',
+          coordinates: [parseFloat(deviceData.longitude), parseFloat(deviceData.latitude)] // GeoJSON format
+        }
       };
 
       const newDevice = await createDevice(newDeviceData);
+      console.log('New device created:', newDevice);
+
+      if (!newDevice._id) {
+        throw new Error('Device ID is not returned');
+      }
+
+      await Promise.all(deviceData.sensors.map(async (sensorReference) => {
+        try {
+          const sensors = await fetchSensors();
+          const sensor = sensors.find(sensor => sensor.sensorReference === sensorReference);
+
+          if (sensor) {
+            await updateSensorById(sensor._id, { deviceID: newDevice._id });
+          }
+        } catch (sensorError) {
+          console.error(`Error updating sensor ${sensorReference}:`, sensorError);
+          throw sensorError;
+        }
+      }));
+
       setShowSuccessAlert(true);
       onDeviceAdded();
 
@@ -110,16 +159,18 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
           countryId: '',
           countryName: '',
           state: '',
-          admin: '',
-          clients: '',
+          adminID: '', 
+          clients: [],
           sensors: [],
           status: '',
+          latitude: '',
+          longitude: ''
         });
         handleCloseAlerts();
         onClose();
       }, 2000);
     } catch (error) {
-      console.error('Error adding device:', error);
+      console.error('Error adding device:', error.response ? error.response.data : error.message);
       setAlertMessage('Error adding device');
       setShowErrorAlert(true);
     }
@@ -132,9 +183,12 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
     });
   };
 
+  const availableSensors = sensors.filter(sensor => !sensor.deviceID);
+
   if (!isOpen) {
     return null;
   }
+
 
   return (
     <div className="form-container-popup nunito">
@@ -145,17 +199,16 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
       </button>
       <form onSubmit={handleSubmit} noValidate>
         <div className="form-group">
+          <div className='flex'>
           <input
             type="text"
             id="ref"
             name="ref"
-            className="input-field"
+            className="input-field mr-2"
             placeholder="ID"
             value={deviceData.ref}
             onChange={handleChange}
           />
-        </div>
-        <div className="form-group">
           <input
             type="text"
             id="deviceName"
@@ -165,6 +218,7 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
             value={deviceData.deviceName}
             onChange={handleChange}
           />
+            </div>
         </div>
         <div className="form-group">
           <input
@@ -212,26 +266,42 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
           </select>
         </div>
         <div className="form-group">
+          <div className='flex'>
           <input
-            type="text"
-            id="admin"
-            name="admin"
-            className="input-field"
-            placeholder="Admin"
-            value={deviceData.admin}
+            type="number"
+            id="latitude"
+            name="latitude"
+            className="input-field mr-2"
+            placeholder="Latitude"
+            value={deviceData.latitude}
             onChange={handleChange}
           />
+          <input
+            type="number"
+            id="longitude"
+            name="longitude"
+            className="input-field"
+            placeholder="Longitude"
+            value={deviceData.longitude}
+            onChange={handleChange}
+          />
+          </div>
         </div>
         <div className="form-group">
-          <input
-            type="text"
-            id="clients"
-            name="clients"
-            className="input-field"
-            placeholder="Clients"
-            value={deviceData.clients}
+          <select
+            id="admin"
+            name="admin"
+            className="input-field custom-select"
+            value={deviceData.admin}
             onChange={handleChange}
-          />
+          >
+            <option value="" >Select Admin</option>
+            {admins.map(admin => (
+              <option key={admin._id} value={admin.firstName}>
+                {admin.firstName}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="form-group">
           <select
@@ -242,24 +312,26 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
             onChange={handleChange}
           >
             <option value="" disabled>Select Sensor</option>
-            {sensors
+            {availableSensors
               .filter(sensor => !deviceData.sensors.includes(sensor.sensorReference))
               .map((sensor) => (
-                <option key={sensor._id} value={sensor._id}>
+                <option key={sensor._id} value={sensor.sensorReference}>
                   {sensor.sensorReference}
                 </option>
               ))}
           </select>
-          <div className="selected-sensors">
-            {deviceData.sensors.map(sensor => (
-              <div key={sensor} className="selected-sensor d-inline-block">
-                {sensor} 
-                <button type="button" onClick={() => handleRemoveSensor(sensor)}>  
-                  <Image src={removeIcon} alt="Remove" height={10} width={12} className='pic' />
+        <div className="selected-sensors">
+          <ul>
+            {deviceData.sensors.map(sensorReference => (
+              <li key={sensorReference} className="selected-sensor d-inline-block">
+                {sensorReference}
+                <button type="button" onClick={() => handleRemoveSensor(sensorReference)} >
+                  <Image src={removeIcon} alt="Remove" height={20} />
                 </button>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
+        </div>
         </div>
         <div className="form-group">
           <select
@@ -270,13 +342,14 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
             onChange={handleChange}
           >
             <option value="" disabled>Select Status</option>
-            <option value="Enabled">Enabled</option>
-            <option value="Disabled">Disabled</option>
+            <option value="In use">In Use</option>
+            <option value="Suspended">Suspended</option>
+            <option value="Maintenance">Maintenance</option>
           </select>
         </div>
-        <div className="form-group">
-          <button type="submit" className="submit-button">Add Device</button>
-        </div>
+        <button type="submit" className="submit-button">
+          Add Device
+        </button>
       </form>
     </div>
   );

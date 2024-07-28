@@ -48,8 +48,8 @@ const renderActiveShape = (props) => {
       />
       <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke={fill} fill="none" />
       <circle cx={ex} cy={ey} r={2} fill={fill} stroke="none" />
-      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#333">{`PV ${value}`}</text>
-      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#999">
+      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} textAnchor={textAnchor} fill="#04D5C7">{`PV ${value}`}</text>
+      <text x={ex + (cos >= 0 ? 1 : -1) * 12} y={ey} dy={18} textAnchor={textAnchor} fill="#04D5C7">
         {`(Rate ${(percent * 100).toFixed(2)}%)`}
       </text>
     </g>
@@ -75,7 +75,7 @@ const StatBox11 = () => {
             cy="50%"
             innerRadius={50}
             outerRadius={60}
-            fill="#8884d8"
+            fill="#04D5C7"
             dataKey="value"
             onMouseEnter={onPieEnter}
           />

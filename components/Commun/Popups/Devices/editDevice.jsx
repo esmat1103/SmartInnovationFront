@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import returnIcon from '/public/assets/return.svg';
-import SuccessAlert from '../../Alerts/success-alert';
-import ErrorAlert from '../../Alerts/error-alert';
-import { updateDeviceById } from '@app/utils/apis/devices';
+import SuccessAlert from '@components/Commun/Alerts/success-alert'; 
+import ErrorAlert from '@components/Commun/Alerts/error-alert'; 
+import { updateDeviceById } from '@app/utils/apis/devices'; 
+import { updateSensorById, fetchSensors } from '@app/utils/apis/sensors';
 import { fetchCountries, fetchStates } from '@app/utils/apis/location';
-import { fetchSensors } from '@app/utils/apis/sensors';
 import removeIcon from '/public/assets/Table/delete.svg';
+import axios from 'axios';
 
 const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
   const [alertMessage, setAlertMessage] = useState('');
@@ -19,18 +20,27 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
     countryId: '',
     countryName: '',
     state: '',
-    admin: '',
-    clients: '',
+    adminID: '', 
+    clients: [],
     sensors: [],
     status: '',
+    latitude: '',
+    longitude: '',
   });
   const [countries, setCountries] = useState([]);
   const [states, setStates] = useState([]);
   const [sensors, setSensors] = useState([]);
+  const [admins, setAdmins] = useState([]);
 
   useEffect(() => {
     if (initialDeviceData) {
-      setDeviceData(initialDeviceData); // Set initial device data if provided
+      console.log('Initial Device Data:', initialDeviceData);
+      const { location } = initialDeviceData;
+      setDeviceData({
+        ...initialDeviceData,
+        latitude: location?.coordinates[1] || '', 
+        longitude: location?.coordinates[0] || '' 
+      });
     } else {
       setDeviceData({
         ref: '',
@@ -39,27 +49,45 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
         countryId: '',
         countryName: '',
         state: '',
-        admin: '',
-        clients: '',
+        adminID: '',
         sensors: [],
         status: '',
+        latitude: '',
+        longitude: '',
       });
     }
+  
     fetchInitialData();
   }, [isOpen, initialDeviceData]);
-
+  
   const fetchInitialData = async () => {
     try {
-      const [countriesData, statesData, sensorsData] = await Promise.all([
+      const token = localStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error('No token found in localStorage.');
+      }
+      
+      const [countriesData, statesData, sensorsData, adminsData] = await Promise.all([
         fetchCountries(),
         fetchStates(),
         fetchSensors(),
+        axios.get('http://localhost:3008/users/role/admin', {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }).then(response => response.data)
       ]);
+
       setCountries(countriesData);
       setStates(statesData);
-      setSensors(sensorsData);
+      const unassignedSensors = sensorsData.filter(sensor => !sensor.deviceID);
+      setSensors(unassignedSensors);
+      setAdmins(adminsData);
     } catch (error) {
       console.error('Error fetching initial data:', error);
+      setAlertMessage('Error fetching initial data');
+      setShowErrorAlert(true);
     }
   };
 
@@ -70,32 +98,27 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name === 'sensors') {
-      const selectedSensor = sensors.find((sensor) => sensor._id.toString() === value);
-      if (selectedSensor && !deviceData.sensors.includes(selectedSensor.sensorReference)) {
-        setDeviceData({ ...deviceData, sensors: [...deviceData.sensors, selectedSensor.sensorReference] });
-      }
-    } else if (name === 'countryId') {
-      const selectedCountry = countries.find((country) => String(country.id) === value);
+
+    if (name === 'countryId') {
+      const selectedCountry = countries.find(country => String(country.id) === value);
       setDeviceData({
         ...deviceData,
         countryId: value,
-        countryName: selectedCountry ? selectedCountry.name : '',
+        countryName: selectedCountry ? selectedCountry.name : ''
+      });
+    } else if (name === 'adminID') {
+      setDeviceData({
+        ...deviceData,
+        adminID: value,
+        admin: admins.find(admin => admin._id === value)?.firstName || '' 
       });
     } else {
       setDeviceData({ ...deviceData, [name]: value });
     }
   };
 
-  const handleRemoveSensor = (sensorReference) => {
-    setDeviceData((prevData) => ({
-      ...prevData,
-      sensors: prevData.sensors.filter((sensor) => sensor !== sensorReference),
-    }));
-  };
-
   const validateForm = () => {
-    const requiredFields = ['ref', 'deviceName', 'macAddress', 'countryId', 'state', 'admin', 'clients', 'status'];
+    const requiredFields = ['ref', 'deviceName', 'macAddress', 'countryId', 'state', 'adminID', 'sensors', 'status', 'latitude', 'longitude'];
     for (const field of requiredFields) {
       if (!deviceData[field]) {
         setAlertMessage('Please fill in all the required fields!');
@@ -106,17 +129,45 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
     return true;
   };
 
+  const updateSensors = async (deviceId) => {
+    try {
+      const sensors = await fetchSensors();
+      await Promise.all(deviceData.sensors.map(async (sensorReference) => {
+        const sensor = sensors.find(sensor => sensor.sensorReference === sensorReference);
+        if (sensor) {
+          await updateSensorById(sensor._id, { deviceID: deviceId });
+        }
+      }));
+    } catch (sensorError) {
+      console.error('Error updating sensors:', sensorError);
+      throw sensorError;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
+  
     if (!validateForm()) {
       return;
     }
-
+  
+    const updatedDeviceData = {
+      ...deviceData,
+      latitude: parseFloat(deviceData.latitude),
+      longitude: parseFloat(deviceData.longitude),
+      location: {
+        type: 'Point',
+        coordinates: [parseFloat(deviceData.longitude), parseFloat(deviceData.latitude)] // Ensure correct order
+      }
+    };
+  
+    console.log('Sending data:', updatedDeviceData); // Log data to verify
+  
     try {
-      const updatedDevice = await updateDeviceById(deviceData._id, deviceData);
+      const updatedDevice = await updateDeviceById(deviceData._id, updatedDeviceData);
+      await updateSensors(updatedDevice._id);
+  
       setShowSuccessAlert(true);
-
       setTimeout(() => {
         handleCloseAlerts();
         onClose();
@@ -127,7 +178,11 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
       setShowErrorAlert(true);
     }
   };
+  
 
+  if (!isOpen) {
+    return null;
+  }
   return (
     <div className="form-container-popup nunito">
       {showSuccessAlert && <SuccessAlert message="Device updated successfully!" onClose={handleCloseAlerts} />}
@@ -135,19 +190,18 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
       <button className="return-button mb-5" onClick={onClose}>
         <Image src={returnIcon} alt="Return" className="return-icon" height={25} />
       </button>
-      <form onSubmit={handleSubmit}>
-        <div className="form-group">
+      <form onSubmit={handleSubmit} noValidate>
+      <div className="form-group">
+      <div className='flex'>
           <input
             type="text"
             id="ref"
             name="ref"
-            className="input-field"
+            className="input-field mr-2"
             placeholder="ID"
             value={deviceData.ref}
             onChange={handleChange}
           />
-        </div>
-        <div className="form-group">
           <input
             type="text"
             id="deviceName"
@@ -157,6 +211,7 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
             value={deviceData.deviceName}
             onChange={handleChange}
           />
+         </div> 
         </div>
         <div className="form-group">
           <input
@@ -177,11 +232,9 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
             value={deviceData.countryId}
             onChange={handleChange}
           >
-            <option value="" disabled>
-              Select Country
-            </option>
+            <option value="" disabled>Select Country</option>
             {countries.map((country) => (
-              <option key={country._id} value={country.id}>
+              <option key={country.id} value={country.id}>
                 {country.name}
               </option>
             ))}
@@ -195,9 +248,7 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
             value={deviceData.state}
             onChange={handleChange}
           >
-            <option value="" disabled>
-              Select State
-            </option>
+            <option value="" disabled>Select State</option>
             {states
               .filter((state) => state.country_id === parseInt(deviceData.countryId))
               .map((state) => (
@@ -208,26 +259,42 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
           </select>
         </div>
         <div className="form-group">
+          <div className='flex'>
           <input
-            type="text"
-            id="admin"
-            name="admin"
-            className="input-field"
-            placeholder="Admin"
-            value={deviceData.admin}
+            type="number"
+            id="latitude"
+            name="latitude"
+            className="input-field mr-2"
+            placeholder="Latitude"
+            value={deviceData.latitude}
             onChange={handleChange}
           />
+          <input
+            type="number"
+            id="longitude"
+            name="longitude"
+            className="input-field"
+            placeholder="Longitude"
+            value={deviceData.longitude}
+            onChange={handleChange}
+          />
+          </div>
         </div>
         <div className="form-group">
-          <input
-            type="text"
-            id="clients"
-            name="clients"
-            className="input-field"
-            placeholder="Clients"
-            value={deviceData.clients}
+          <select
+            id="adminID"
+            name="adminID"
+            className="input-field custom-select"
+            value={deviceData.adminID}
             onChange={handleChange}
-          />
+          >
+            <option value="" disabled>Select Admin</option>
+            {admins.map(admin => (
+              <option key={admin._id} value={admin._id}>
+                {admin.firstName}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="form-group">
           <select
@@ -235,28 +302,42 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
             name="sensors"
             className="input-field custom-select"
             value=""
-            onChange={handleChange}
+            onChange={(e) => {
+              const selectedSensorId = e.target.value;
+              const selectedSensor = sensors.find(sensor => sensor._id === selectedSensorId);
+              if (selectedSensor && !deviceData.sensors.includes(selectedSensor.sensorReference)) {
+                setDeviceData(prevData => ({
+                  ...prevData,
+                  sensors: [...prevData.sensors, selectedSensor.sensorReference]
+                }));
+              }
+            }}
           >
-            <option value="" disabled>
-              Select Sensor
-            </option>
-            {sensors
-              .filter((sensor) => !deviceData.sensors.includes(sensor.sensorReference))
-              .map((sensor) => (
-                <option key={sensor._id} value={sensor._id}>
-                  {sensor.sensorReference}
-                </option>
-              ))}
-          </select>
-          <div className="selected-sensors">
-            {deviceData.sensors.map((sensor) => (
-              <div key={sensor} className="selected-sensor d-inline-block">
-                {sensor}
-                <button type="button" onClick={() => handleRemoveSensor(sensor)}>
-                  <Image src={removeIcon} alt="Remove" height={10} width={12} className="pic" />
-                </button>
-              </div>
+            <option value="" disabled>Select Sensor</option>
+            {sensors.map(sensor => (
+              <option key={sensor._id} value={sensor._id}>
+                {sensor.sensorReference}
+              </option>
             ))}
+          </select>
+          <div className='selected-sensors'>
+          {deviceData.sensors.length > 0 && (
+            <ul>
+              {deviceData.sensors.map((sensorRef, index) => (
+                <li key={index} className='selected-sensor d-inline-block'>
+                  {sensorRef}
+                  <button type="button" onClick={() => {
+                    setDeviceData(prevData => ({
+                      ...prevData,
+                      sensors: prevData.sensors.filter(ref => ref !== sensorRef)
+                    }));
+                  }}>
+                    <Image src={removeIcon} alt="Remove" width={15} height={15} />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
           </div>
         </div>
         <div className="form-group">
@@ -267,18 +348,15 @@ const EditDevice = ({ isOpen, onClose, initialDeviceData }) => {
             value={deviceData.status}
             onChange={handleChange}
           >
-            <option value="" disabled>
-              Select Status
-            </option>
-            <option value="Enabled">Enabled</option>
-            <option value="Disabled">Disabled</option>
+            <option value="" disabled>Select Status</option>
+            <option value="In use">In Use</option>
+            <option value="Suspended">Suspended</option>
+            <option value="Maintenance">Maintenance</option>
           </select>
         </div>
-        <div className="form-group">
-          <button type="submit" className="submit-button">
-            Update Device
-          </button>
-        </div>
+        <button type="submit" className="submit-button">
+          Update Device
+        </button>
       </form>
     </div>
   );

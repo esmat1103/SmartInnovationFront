@@ -31,7 +31,7 @@ const TableBodyD = ({ tableData, selectedRows, handleCheckboxChange, refreshData
   const confirmDelete = async () => {
     try {
       await deleteDeviceById(deleteItem);
-      refreshData(); // Automatically refresh data after deletion
+      refreshData(); 
       setShowDeleteConfirmation(false);
     } catch (error) {
       console.error('Error deleting device:', error);
@@ -86,11 +86,17 @@ const TableBodyD = ({ tableData, selectedRows, handleCheckboxChange, refreshData
                 {row.sensors.length}
               </button>
             </td>
-            <td className="f11 nunito  ">
-              <div className={row.status === 'Enabled' ? 'box-cellE f11' : 'box-cellD f11'}>
-                {row.status}
-              </div>
+            <td className="f11 nunito">
+                <div className={
+                  row.status === 'In use' ? 'box-cellE f11' :
+                  row.status === 'Suspended' ? 'box-cellD f11' :
+                  row.status === 'Maintenance' ? 'box-cellH f11' :
+                  'box-cellDefault f11'  
+                }>
+                  {row.status}
+                </div>
             </td>
+
             <td className="text-center">
               <div className="flex justify-center ">
                 <button onClick={() => handleEditClick(row._id)}>
