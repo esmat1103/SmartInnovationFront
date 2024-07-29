@@ -148,7 +148,7 @@ const EditSensor = ({ isOpen, onClose, initialSensorData }) => {
           >
             <option value="" disabled>Select Unit</option>
             {units.map((unit) => (
-              <option key={unit._id} value={unit.unitName}>{unit.unitName}</option>
+              <option key={unit._id} value={unit.unitName}> {unit.unitName} <span className='bold'>({unit.Abbreviation})</span></option>
             ))}
           </select>
         </div>

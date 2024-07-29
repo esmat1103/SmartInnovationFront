@@ -1,6 +1,8 @@
 import LayoutH from '@components/Admin/layoutH';
 import { getTranslations } from '../../app/utils/getTranslations';
 import React, {useState,useEffect} from "react";
+import HomeA from '@components/Admin/HomeDashContent/Home';
+ 
 const Home = (initialLanguage) => {
     const [language, setLanguage] = useState(initialLanguage);
 
@@ -11,7 +13,12 @@ const Home = (initialLanguage) => {
 
     return (
         <>
-            <LayoutH/>    
+            <LayoutH>
+                <div className="mt-3 bg-w">
+                    <HomeA />
+                </div>
+                
+             </LayoutH>   
         </>
 
     );

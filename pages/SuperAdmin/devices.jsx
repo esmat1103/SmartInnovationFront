@@ -1,6 +1,6 @@
 import LayoutSuperAdmin from "@components/SuperAdmin/layout";
 import { getTranslations } from '../../app/utils/getTranslations';
-import TableD from "@components/Admin/DevicesContent/TableD";
+import TableD from "@components/SuperAdmin/DevicesContent/TableD";
 import React, {useState, useEffect} from "react";
 
 const Devices = (initialLanguage) => {

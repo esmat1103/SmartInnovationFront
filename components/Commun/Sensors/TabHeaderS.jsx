@@ -23,18 +23,18 @@ const TableHeaderS = ({ handleHeaderCheckboxChange, allSelected }) => {
             checked={allSelected}
           />
         </th>
-        <th>{t('ref')}</th>
-        <th>{t('name')}</th>
-        <th>{t('unit')}</th>
-        <th>{t('rangeMin')}</th>
-        <th>{t('rangeMax')}</th>
-        <th>{t('thresholdMin')}</th>
-        <th>{t('thresholdMax')}</th>
-        <th className="pl54">{t('pulse')}</th>
-        <th>{t('startIndex')}</th>
-        <th>{t('Coefficient')}</th>
-        <th>{t('parameters')}</th>
-        <th>{t('state')}</th>
+        <th className='center'>{t('ref')}</th>
+        <th className='pl23 center'>{t('name')}</th>
+        <th className='pl23 center'>{t('unit')}</th>
+        <th className='pl23 center'>{t('rangeMin')}</th>
+        <th className='pl23 center'>{t('rangeMax')}</th>
+        <th className='pl23 center'>{t('thresholdMin')}</th>
+        <th className='pl23 center'>{t('thresholdMax')}</th>
+        <th className="pl23 center">{t('state')}</th>
+        <th className="pl23 center">{t('pulse')}</th>
+        <th className='pl23 center'>{t('startIndex')}</th>
+        <th className='pl23 center'>{t('Coefficient')}</th>
+        <th className='pl23 center'>{t('parameters')}</th>
         <th className="center">{t('actions')}</th>
       </tr>
     </thead>

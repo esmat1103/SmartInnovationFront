@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import StatBox1 from './StatBox1';
 import StatBox2 from './StatBox2';
 import StatBox3 from './StatBox3';
@@ -15,14 +15,13 @@ import filter from '../../../public/assets/MainDash/filter.svg';
 import square from '../../../public/assets/MainDash/squareB.svg';
 import chevronD from '../../../public/assets/MainDash/chevronD.svg';
 
-
-const HomeSA = () => {          
+const HomeA = () => {          
 
 
 
     return (
         <>
-        <h1 className="pl-2 fw600 nunito  white f30">Dashboard Overview</h1>
+         <h1 className="pl-2 fw600 nunito  white f30">Dashboard Overview</h1>
          <div className=' pl-2 filter-bar flex mb-2 mt-2'>
             <Image src={filter} alt='filter' width={20} height={20} />
             <p className='white mx-2 nunito'> Filter : </p>
@@ -38,10 +37,9 @@ const HomeSA = () => {
         
          </div>
 
-        <div className=' flex '>
-
-            <div className=' pl-2 mx-1'>
-               <StatBox1/>
+        <div className='flex'>
+            <div className='mx-2'>
+              <StatBox1/>
             </div>
             <div className='mx-1'>
               <StatBox2/>
@@ -56,17 +54,7 @@ const HomeSA = () => {
               <StatBox5/>
             </div>
         </div>
-        <div className='mt-2 flex mx-2'>
-            <div className='mx-1 '>
-                <StatBox6/>
-            </div>
-            <div className='mx-1 '>
-                <StatBox10/>
-            </div>
-            <div className='mx-1 '>
-                <StatBox7/>
-            </div>
-        </div>
+        
         <div className='mt-2 flex mx-2'>
             <div className='mx-1 '>
                 <StatBox8/>
@@ -78,6 +66,17 @@ const HomeSA = () => {
                 <StatBox9/>
             </div>
         </div>
+        <div className='mt-2 flex mx-2'>
+            <div className='mx-1 '>
+                <StatBox6/>
+            </div>
+            <div className='mx-1 '>
+                <StatBox10/>
+            </div>
+            <div className='mx-1 '>
+                <StatBox7/>
+            </div>
+        </div>
        
     
         </>
@@ -85,4 +84,4 @@ const HomeSA = () => {
 };
 
 
-export default HomeSA;
+export default HomeA;

@@ -13,7 +13,7 @@ const useFetchCoordinates = () => {
         const fetchedMarkers = devices.map(device => ({
           position: device.location.coordinates,
           popupContent: `Device: ${device.deviceName}`,
-          iconUrl: '' 
+          iconUrl: '/assets/MainDash/locationGreen.svg' 
         }));
 
         setMarkers(fetchedMarkers);

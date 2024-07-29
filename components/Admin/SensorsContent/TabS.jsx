@@ -1,18 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import TableHeaderS from '@components/Commun/Sensors/TabHeaderS'; 
 import TableBodyS from '@components/Commun/Sensors/TabBodyS'; 
-import AddButton from '@components/Commun/Buttons/AddButton';
 import deleteW from '@public/assets/Table/deleteW.svg';
 import Pagination from '@components/Commun/Pagination';
-import DropdownFilter from '../../Commun/Filter';
+import DropdownFilter from '../../commun/Filter';
 import SearchBar from '@components/Commun/search'; 
 import DeleteAllButton from '@components/Commun/Buttons/DeleteAllButton';
 import DeleteConfirmation from '@components/Commun/Popups/DeleteAllConfirmation';
-import AddSensor from '@components/Commun/Popups/Sensors/addSensor';
-import { fetchSensors, updateSensorById, deleteSensorById } from '@app/utils/apis/sensors';
+import { fetchSensors, updateSensorById, deleteSensorById } from '@app/utils/apis/sensors'; 
+import { getDevicesByAdminId } from '@app/utils/apis/devices';
+
+const filterOptions = {
+  'All sensors': '',
+  'Enabled sensors': 'Enabled',
+  'Disabled sensors': 'Disabled',
+  'Pulsed sensors': 'Yes',
+  'Non-pulsed sensors': 'No',
+};
 
 const TableS = () => {
   const [tableData, setTableData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedRows, setSelectedRows] = useState([]);
   const [hovered, setHovered] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -20,8 +29,9 @@ const TableS = () => {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [deleteItem, setDeleteItem] = useState(null);
-  const [refresh, setRefresh] = useState(false); 
+  const [refresh, setRefresh] = useState(false);
   const [allSelected, setAllSelected] = useState(false);
+  const [filterOption, setFilterOption] = useState('');
 
   useEffect(() => {
     fetchSensorData();
@@ -51,15 +61,47 @@ const TableS = () => {
     return () => {
       ws.close();
     };
-  }, [refresh]); 
+  }, [refresh]);
 
   const fetchSensorData = async () => {
     try {
+      const userId = localStorage.getItem('userId');
+      const devices = await getDevicesByAdminId(userId);
+      const deviceIds = devices.map(device => device._id);
+
       const sensors = await fetchSensors();
-      setTableData(sensors);
+      const filteredSensors = sensors.filter(sensor => deviceIds.includes(sensor.deviceID));
+
+      setTableData(filteredSensors);
+      filterData(filteredSensors, searchTerm, filterOption);
     } catch (error) {
       console.error('Error fetching sensors:', error);
     }
+  };
+
+  const filterData = (data, searchTerm, filterOption) => {
+    let filtered = data;
+
+    if (searchTerm) {
+      filtered = filtered.filter(sensor =>
+        Object.values(sensor).some(value =>
+          String(value).toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (typeof value === 'number' && value.toString().includes(searchTerm))
+        )
+      );
+    }
+
+    if (filterOption === 'Enabled') {
+      filtered = filtered.filter(sensor => sensor.state === 'Enabled');
+    } else if (filterOption === 'Disabled') {
+      filtered = filtered.filter(sensor => sensor.state === 'Disabled');
+    } else if (filterOption === 'Yes') {
+      filtered = filtered.filter(sensor => sensor.pulse === 'Yes');
+    } else if (filterOption === 'No') {
+      filtered = filtered.filter(sensor => sensor.pulse === 'No');
+    }
+
+    setFilteredData(filtered);
   };
 
   const toggleForm = () => {
@@ -86,7 +128,7 @@ const TableS = () => {
 
   const handleCheckboxChange = (id) => {
     if (selectedRows.includes(id)) {
-      setSelectedRows(selectedRows.filter((rowId) => rowId !== id));
+      setSelectedRows(selectedRows.filter(rowId => rowId !== id));
     } else {
       setSelectedRows([...selectedRows, id]);
     }
@@ -94,16 +136,26 @@ const TableS = () => {
 
   const handleHeaderCheckboxChange = () => {
     setAllSelected(!allSelected);
-    setSelectedRows(allSelected ? [] : tableData.map((row) => row._id));
+    setSelectedRows(allSelected ? [] : filteredData.map(row => row._id));
   };
 
   const onPageChange = (page) => {
     setCurrentPage(page);
   };
 
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    filterData(tableData, value, filterOption);
+  };
+
+  const handleFilterChange = (description) => {
+    const internalValue = filterOptions[description] || '';
+    setFilterOption(internalValue);
+    filterData(tableData, searchTerm, internalValue);
+  };
+
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = currentPage * rowsPerPage;
-  const filterOptions = ['Option 1', 'Option 2', 'Option 3'];
 
   const handleDeleteSelected = () => {
     setShowDeleteConfirmation(true);
@@ -111,8 +163,7 @@ const TableS = () => {
 
   const confirmDelete = async () => {
     try {
-      const selectedIds = selectedRows;
-      await Promise.all(selectedIds.map(id => deleteSensorById(id)));
+      await Promise.all(selectedRows.map(id => deleteSensorById(id)));
       setRefresh(!refresh); 
       setShowDeleteConfirmation(false);
       setSelectedRows([]);
@@ -130,8 +181,7 @@ const TableS = () => {
       <div className="top-container flex justify-between">
         <div className="top-left-text nunito f30 "></div>
         <div className="top-right-container flex">
-          <SearchBar />
-          <AddButton text="Add Sensor" onClick={toggleForm} />
+          <SearchBar onChange={handleSearchChange} />
         </div>
       </div>
       <div className="mt-5 table-container">
@@ -150,13 +200,19 @@ const TableS = () => {
             )}
           </div>
           <div className="">
-            <DropdownFilter options={filterOptions} onChange={(option) => console.log('Selected option:', option)} />
+            <DropdownFilter
+              options={Object.keys(filterOptions)} 
+              onChange={handleFilterChange} 
+            />
           </div>
         </div>
         <table className="table-auto">
-          <TableHeaderS handleHeaderCheckboxChange={handleHeaderCheckboxChange} allSelected={allSelected} />
+          <TableHeaderS
+            handleHeaderCheckboxChange={handleHeaderCheckboxChange}
+            allSelected={allSelected}
+          />
           <TableBodyS
-            tableData={tableData.slice(startIndex, endIndex)}
+            tableData={filteredData.slice(startIndex, endIndex)}
             handleDelete={handleDelete}
             handleEdit={handleEdit}
             selectedRows={selectedRows}
@@ -166,11 +222,10 @@ const TableS = () => {
         <div className="pagination-container">
           <Pagination
             currentPage={currentPage}
-            totalPages={Math.ceil(tableData.length / rowsPerPage)}
+            totalPages={Math.ceil(filteredData.length / rowsPerPage)}
             onPageChange={onPageChange}
           />
         </div>
-        {isFormOpen && <AddSensor isOpen={isFormOpen} onClose={toggleForm} onSensorAdded={() => setRefresh(!refresh)} />}
         {isFormOpen && <div className="table-overlay"></div>}
       </div>
       {showDeleteConfirmation && (

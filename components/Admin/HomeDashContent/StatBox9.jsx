@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { fetchDevices } from '../../../app/utils/apis/devices'; 
 import dynamic from 'next/dynamic';
+import { getDevicesByAdminId } from '@app/utils/apis/devices';
+import jwt from 'jsonwebtoken';
 
 const LeafletMap = dynamic(() => import('./leafletMap'), {
   ssr: false
@@ -12,25 +13,34 @@ const StatBox9 = () => {
   useEffect(() => {
     const loadDevices = async () => {
       try {
-        const devices = await fetchDevices();
-        
-        console.log('Fetched devices:', devices);
+        const token = localStorage.getItem('token');
+        if (!token) {
+          throw new Error('No token found');
+        }
+
+        const decodedToken = jwt.decode(token);
+        if (!decodedToken || !decodedToken.userId) {
+          throw new Error('Invalid token');
+        }
+
+        const loggedInAdminId = decodedToken.userId;
+
+        const devices = await getDevicesByAdminId(loggedInAdminId);
+
         const markersData = devices.map(device => {
           const coordinates = device.location?.coordinates || [0, 0];
-          const status = device.status || 'Unknown'; 
+          const status = device.status || 'Unknown';
 
           let iconUrl;
-          if (status === 'Maintenance') {
+          if (status === 'In use') {
+            iconUrl = '/assets/MainDash/locationGreen.svg';
+          } else if (status === 'Maintenance') {
             iconUrl = '/assets/MainDash/locationPurple.svg';
           } else if (status === 'Suspended') {
             iconUrl = '/assets/MainDash/locationRed.svg';
-          } else if (status === 'In use') {
-            iconUrl = '/assets/MainDash/locationGreen.svg';
           }
 
-          console.log('Device coordinates:', coordinates);
-          console.log('Device status:', status);
-          console.log('Marker icon URL:', iconUrl);
+      
 
           return {
             position: coordinates,
@@ -39,7 +49,6 @@ const StatBox9 = () => {
           };
         });
 
-        console.log('Formatted markers data:', markersData);
 
         setMarkers(markersData);
       } catch (error) {

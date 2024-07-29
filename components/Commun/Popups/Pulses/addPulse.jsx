@@ -10,8 +10,10 @@ const AddPulse = ({ isOpen, onClose, onPulseAdded }) => {
   const [showSuccessAlert, setShowSuccessAlert] = useState(false);
   const [showErrorAlert, setShowErrorAlert] = useState(false);
   const [pulseData, setPulseData] = useState({
-    pulseName: '',
-    pulseValue: '',
+    name: '',
+    unit: '',
+    description: '',
+    applications: '',
   });
   const timeoutRef = useRef(null);
 
@@ -34,8 +36,8 @@ const AddPulse = ({ isOpen, onClose, onPulseAdded }) => {
   };
 
   const validateForm = () => {
-    const { pulseName, pulseValue } = pulseData;
-    if (!pulseName.trim() || !pulseValue.trim()) {
+    const { name, unit, description, applications } = pulseData;
+    if (!name.trim() || !unit.trim() || !description.trim() || !applications.trim()) {
       setAlertMessage('Please fill in all the required fields!');
       setShowErrorAlert(true);
       return false;
@@ -51,13 +53,15 @@ const AddPulse = ({ isOpen, onClose, onPulseAdded }) => {
     }
 
     try {
-      const newPulse = await createPulse(pulseData);
+      await createPulse(pulseData);
       setShowSuccessAlert(true);
       onPulseAdded();
       timeoutRef.current = setTimeout(() => {
         setPulseData({
-          pulseName: '',
-          pulseValue: '',
+          name: '',
+          unit: '',
+          description: '',
+          applications: '',
         });
         handleCloseAlerts();
         onClose();
@@ -84,22 +88,44 @@ const AddPulse = ({ isOpen, onClose, onPulseAdded }) => {
         <div className="form-group">
           <input
             type="text"
-            id="pulseName"
-            name="pulseName"
+            id="name"
+            name="name"
             className="input-field"
             placeholder="Name"
-            value={pulseData.pulseName}
+            value={pulseData.name}
             onChange={handleChange}
           />
         </div>
         <div className="form-group">
           <input
             type="text"
-            id="pulseValue"
-            name="pulseValue"
+            id="unit"
+            name="unit"
             className="input-field"
-            placeholder="Pulse Value"
-            value={pulseData.pulseValue}
+            placeholder="Unit"
+            value={pulseData.unit}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="form-group">
+          <input
+            type="text"
+            id="description"
+            name="description"
+            className="input-field"
+            placeholder="Description"
+            value={pulseData.description}
+            onChange={handleChange}
+          />
+        </div>
+        <div className="form-group">
+          <input
+            type="text"
+            id="applications"
+            name="applications"
+            className="input-field"
+            placeholder="Applications"
+            value={pulseData.applications}
             onChange={handleChange}
           />
         </div>

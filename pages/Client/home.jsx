@@ -1,12 +1,18 @@
 import React from 'react';
-import LayoutH from '@components/Client/layoutH';
 import { getTranslations } from '../../app/utils/getTranslations';
+import HomeC from '@components/Client/HomeDashContent/Home';
+import LayoutH from '@components/Client/layoutH';
 
 const Home = () => {
 
     return (
         <>
-         <LayoutH />    
+        <LayoutH>
+                <div className="mt-5 bg-w">
+                    <HomeC />
+                </div>
+                
+             </LayoutH> 
         </>
     );
 }

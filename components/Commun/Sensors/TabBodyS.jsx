@@ -59,20 +59,22 @@ const TableBodyS = ({ tableData, selectedRows, handleCheckboxChange }) => {
                 onChange={() => handleCheckboxChange(row._id)}
               />
             </td>
-            <td><div className="box-cell f12">{row.sensorReference}</div></td>
-            <td className='pl23'>{row.sensorName}</td>
-            <td><div className="box-cell f12">{row.unit}</div></td>
-            <td className='pl23'>{row.rangeMin}</td>
-            <td>{row.rangeMax}</td>
-            <td className='pl23'>{row.thresholdMin}</td>
-            <td className='pl23'>{row.thresholdMax}</td>
-            <td className='pl50'>
+            <td><div className="box-cell f12 center">{row.sensorReference}</div></td>
+            <td className='pl23 center'>{row.sensorName}</td>
+            <td className='pl23 center'><div className="box-cell f12 center">{row.unit}</div></td>
+            <td className='pl23 center'>{row.rangeMin}</td>
+            <td className='center'>{row.rangeMax}</td>
+            <td className='pl23 center'>{row.thresholdMin}</td>
+            <td className='pl23 center'>{row.thresholdMax}</td>
+            <td className='pl23 center'>
+              <div className={`box-cell f12 ${row.state === 'Enabled' ? 'box-cellE' : 'box-cellD'}`}>{row.state}</div>
+            </td>
+            <td className='pl23 center'>
               <div className={`box-cell f12 ${row.pulse === 'Yes' ? 'box-cellE' : 'box-cellD'}`}>{row.pulse}</div>
             </td>
-            <td className='pl23'>{row.startIndex}</td>
-            <td className='pl23'>{row.coefficient}</td>
-            <td className='pl23'>{row.params}</td>
-            <td className='pl23'>{row.state}</td>
+            <td className='pl23 center'>{row.startIndex}</td>
+            <td className='pl23 center'>{row.coefficient}</td>
+            <td className='pl23 center'>{row.params}</td>
             <td className='text-center pl23'>
               <div className="flex justify-center">
                 <button onClick={() => handleEditClick(row._id)}>

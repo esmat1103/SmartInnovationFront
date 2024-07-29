@@ -271,8 +271,8 @@ const TableBody = ({ tableData, handleEdit, selectedRows, handleCheckboxChange ,
               <Image
                   src={row.profileImage ? `http://localhost:3008/uploads/${row.profileImage}` : profilePlaceholder}
                   alt={`${row.firstName} ${row.lastName}`}
-                  width={50}
-                  height={50}
+                  width={100}
+                  height={100}
                   className="mr-2"
                   id='profile-pic'
                 />

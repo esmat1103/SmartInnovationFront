@@ -161,7 +161,7 @@ const AddSensor = ({ isOpen, onClose, onSensorAdded }) => {
             <option value="" disabled>Unit</option>
             {units.map((unit) => (
               <option key={unit._id} value={unit.unitName}>
-                {unit.unitName}
+                {unit.unitName} <span className='bold'>({unit.Abbreviation})</span>
               </option>
             ))}
           </select>

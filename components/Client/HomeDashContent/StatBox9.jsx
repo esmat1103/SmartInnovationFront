@@ -17,15 +17,16 @@ const StatBox9 = () => {
         console.log('Fetched devices:', devices);
         const markersData = devices.map(device => {
           const coordinates = device.location?.coordinates || [0, 0];
-          const status = device.status || 'Unknown'; 
+          const status = device.status || 'Unknown'; // Default to 'Unknown' if status is not available
 
+          // Determine the icon URL based on the status
           let iconUrl;
-          if (status === 'Maintenance') {
+          if (status === 'In use') {
+            iconUrl = '/assets/MainDash/locationGreen.svg';
+          } else if (status === 'Maintenance') {
             iconUrl = '/assets/MainDash/locationPurple.svg';
           } else if (status === 'Suspended') {
             iconUrl = '/assets/MainDash/locationRed.svg';
-          } else if (status === 'In use') {
-            iconUrl = '/assets/MainDash/locationGreen.svg';
           }
 
           console.log('Device coordinates:', coordinates);

@@ -232,10 +232,11 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
           />
         </div>
         <div className="form-group">
+        <div className='flex'>
           <select
             id="countryId"
             name="countryId"
-            className="input-field custom-select"
+            className="input-field custom-select mr-2"
             value={deviceData.countryId}
             onChange={handleChange}
           >
@@ -246,8 +247,6 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
               </option>
             ))}
           </select>
-        </div>
-        <div className="form-group">
           <select
             id="state"
             name="state"
@@ -264,6 +263,7 @@ const AddDevice = ({ isOpen, onClose, onDeviceAdded }) => {
                 </option>
               ))}
           </select>
+        </div>
         </div>
         <div className="form-group">
           <div className='flex'>

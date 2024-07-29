@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import TableHeaderD from '@components/Commun/Devices/TabHeaderD';
-import TableBodyD from '@components/Commun/Devices/TabBodyD'; 
+import TableBodyD from '../../Commun/Devices/TabBodyD'; 
 import deleteW from '@public/assets/Table/deleteW.svg';
 import Pagination from '@components/Commun/Pagination';
 import SearchBar from '@components/Commun/search';
-import DropdownFilter from '@components/Commun/Filter';
+import DropdownFilter from '../../commun/Filter';
 import DeleteAllButton from '@components/Commun/Buttons/DeleteAllButton';
 import DeleteConfirmation from '@components/Commun/Popups/DeleteAllConfirmation';
 import { getDevicesByAdminId, updateDeviceById, deleteDeviceById } from '@app/utils/apis/devices';
-import jwt from 'jsonwebtoken';
 
 const TableD = () => {
   const [tableData, setTableData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedRows, setSelectedRows] = useState([]);
   const [hovered, setHovered] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
@@ -21,37 +22,17 @@ const TableD = () => {
   const [refresh, setRefresh] = useState(false);
   const [allSelected, setAllSelected] = useState(false);
   const [error, setError] = useState(null);
+  const [filterOption, setFilterOption] = useState('');
+
+  const filterOptions = {
+    'All devices': '',
+    'Devices under Maintenance': 'Maintenance',
+    'Devices in Use': 'In use',
+    'Devices suspended': 'Suspended'
+  };
 
   useEffect(() => {
-    const fetchDeviceData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          throw new Error('Token not found in local storage');
-        }
-    
-        console.log('Token from localStorage:', token);
-        const decodedToken = jwt.decode(token);
-        console.log('Decoded token:', decodedToken);
-    
-        if (!decodedToken || !decodedToken.userId) {
-          throw new Error('Invalid token or unable to extract userId');
-        }
-    
-        const loggedInAdminId = decodedToken.userId;
-        console.log('Retrieved userId from token:', loggedInAdminId);
-    
-        const data = await getDevicesByAdminId(loggedInAdminId);
-        console.log('Fetched devices data:', data);
-        setTableData(data);
-      } catch (error) {
-        console.error('Error fetching devices:', error);
-        setError('Failed to fetch devices.');
-      }
-    };
-    
     fetchDeviceData();
-
     const ws = new WebSocket('ws://localhost:4002');
 
     ws.onmessage = (event) => {
@@ -59,7 +40,6 @@ const TableD = () => {
       console.log('Received WebSocket message:', data);
 
       if (data.message === 'Device created' || data.message === 'Device updated' || data.message === 'Device deleted') {
-        console.log('WebSocket event: Device change detected');
         fetchDeviceData(); 
       }
     };
@@ -69,15 +49,47 @@ const TableD = () => {
     };
   }, [refresh]);
 
+  const fetchDeviceData = async () => {
+    try {
+      const userId = localStorage.getItem('userId');
+      console.log('Retrieved userId:', userId); 
+      if (!userId) {
+        throw new Error('User ID is not available');
+      }
+      const data = await getDevicesByAdminId(userId);
+      setTableData(data);
+      filterData(data, searchTerm, filterOption); 
+    } catch (error) {
+      console.error('Error fetching devices:', error);
+      setError('Failed to fetch devices.');
+    }
+  };
+
+  const filterData = (data, searchTerm, filterOption) => {
+    let filtered = data;
+
+    if (searchTerm) {
+      filtered = filtered.filter(device =>
+        Object.values(device).some(value =>
+          String(value).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      );
+    }
+
+    if (filterOption) {
+      filtered = filtered.filter(device => device.status === filterOption);
+    }
+
+    setFilteredData(filtered);
+  };
+
   const toggleForm = () => {
     setIsFormOpen(!isFormOpen);
   };
 
   const handleDelete = async (id) => {
     try {
-      console.log('Deleting device with ID:', id);
       await deleteDeviceById(id);
-      console.log('Device deleted successfully');
       setRefresh(!refresh);
     } catch (error) {
       console.error('Error deleting device:', error);
@@ -86,9 +98,7 @@ const TableD = () => {
 
   const handleEdit = async (id, updatedData) => {
     try {
-      console.log('Updating device with ID:', id, 'with data:', updatedData);
       await updateDeviceById(id, updatedData);
-      console.log('Device updated successfully');
       setRefresh(!refresh);
     } catch (error) {
       console.error('Error updating device:', error);
@@ -96,41 +106,44 @@ const TableD = () => {
   };
 
   const handleCheckboxChange = (id) => {
-    console.log('Checkbox change for row ID:', id);
     if (selectedRows.includes(id)) {
       setSelectedRows(selectedRows.filter(rowId => rowId !== id));
     } else {
       setSelectedRows([...selectedRows, id]);
     }
-    console.log('Selected rows:', selectedRows);
   };
 
   const handleHeaderCheckboxChange = () => {
     setAllSelected(!allSelected);
     setSelectedRows(allSelected ? [] : tableData.map((row) => row._id));
-    console.log('Header checkbox change, allSelected:', !allSelected, 'selectedRows:', selectedRows);
   };
 
   const onPageChange = (page) => {
-    console.log('Page change:', page);
     setCurrentPage(page);
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+    filterData(tableData, value, filterOption);
+  };
+
+  const handleFilterChange = (description) => {
+    const internalValue = filterOptions[description] || '';
+    setFilterOption(internalValue);
+    filterData(tableData, searchTerm, internalValue);
   };
 
   const startIndex = (currentPage - 1) * rowsPerPage;
   const endIndex = currentPage * rowsPerPage;
-  const filterOptions = ['Option 1', 'Option 2', 'Option 3'];
 
   const handleDeleteSelected = () => {
-    console.log('Delete selected rows:', selectedRows);
     setShowDeleteConfirmation(true);
   };
 
   const confirmDelete = async () => {
     try {
-      console.log('Confirm delete for selected rows:', selectedRows);
       const selectedIds = selectedRows;
       await Promise.all(selectedIds.map(id => deleteDeviceById(id)));
-      console.log('Selected devices deleted successfully');
       setRefresh(!refresh);
       setSelectedRows([]);
       setShowDeleteConfirmation(false);
@@ -140,7 +153,6 @@ const TableD = () => {
   };
 
   const cancelDelete = () => {
-    console.log('Cancel delete');
     setShowDeleteConfirmation(false);
   };
 
@@ -149,7 +161,7 @@ const TableD = () => {
       <div className="top-container flex justify-between">
         <div className="top-left-text nunito f30 "></div>
         <div className="top-right-container flex">
-          <SearchBar />
+          <SearchBar onChange={handleSearchChange} />
         </div>
       </div>
       <div className='mt-5 table-container'>
@@ -168,13 +180,16 @@ const TableD = () => {
             )}
           </div>
           <div className=''>
-            <DropdownFilter options={filterOptions} onChange={(option) => console.log('Selected option:', option)} />
+            <DropdownFilter 
+              options={Object.keys(filterOptions)} // Display the descriptive options
+              onChange={handleFilterChange}  
+            />
           </div>
         </div>
         <table className="table-auto">
           <TableHeaderD handleHeaderCheckboxChange={handleHeaderCheckboxChange} />
           <TableBodyD
-            tableData={tableData.slice(startIndex, endIndex)}
+            tableData={filteredData.slice(startIndex, endIndex)}
             handleDelete={handleDelete}
             handleEdit={handleEdit}
             selectedRows={selectedRows}
@@ -184,7 +199,7 @@ const TableD = () => {
         <div className='pagination-container'>
           <Pagination
             currentPage={currentPage}
-            totalPages={Math.ceil(tableData.length / rowsPerPage)}
+            totalPages={Math.ceil(filteredData.length / rowsPerPage)}
             onPageChange={onPageChange}
           />
         </div>
